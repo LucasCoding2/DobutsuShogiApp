@@ -212,7 +212,7 @@ public class GameState {
             else if(selectedPiece.inBench() && checkLegal(selectedPiece,piece)) {
                 swapPieces(piece,selectedPiece,true);
                 playerTurn = !playerTurn;     
-                if(aIDepth > 0) {
+                if(aIDepth > 0 && gameStarted) {
                     Piece[] move = aIPlayer.makeMove(board,bench1,bench2);
                     swapPieces(move[0],move[1],move[1].inBench());
                     playerTurn = !playerTurn;
