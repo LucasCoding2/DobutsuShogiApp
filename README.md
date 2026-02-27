@@ -1,7 +1,10 @@
+# Note
+This is a work in progress, still needs to be debugged
+
 # Dependencies, Building, and Running
 ## Dependency Instructions
 
-Download JavaFX
+Download JavaFX 20.0.1
 https://gluonhq.com/products/javafx/
 
 ## Building
