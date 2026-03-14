@@ -16,7 +16,8 @@ public class AIPlayer {//add case for lion at end
    
    /** the states after the AI's first move**/
    LinkedList<State> firstStates;
-   
+  
+
    /**
     * AIPlayer the constructor for setting up the AI player
     * @param depth, the depth that the AI will search to
@@ -76,6 +77,11 @@ public class AIPlayer {//add case for lion at end
       /** whether or not we used the bench, true if we did, false otherwise*/
       boolean benchMove = false;
       
+      int alpha = Integer.MIN_VALUE;
+      int beta = Integer.MAX_VALUE;
+      
+      
+      
       /**
        * State the constructor for the state
        * Initializes the arrays
@@ -104,7 +110,7 @@ public class AIPlayer {//add case for lion at end
          }
          
          String benchedPiece = "";
-         if(!aIBoard[location2].contains("Lion") && benchLocation > 0) {//if there is an empty bench spot
+         if(!aIBoard[location2].contains("Lion") && benchLocation >= 0) {//if there is an empty bench spot
              benchedPiece = bench[benchLocation];  
              bench[benchLocation] = findName(aIBoard[location2]);
          }      
@@ -225,6 +231,8 @@ public class AIPlayer {//add case for lion at end
       state2.playerTurn = state.playerTurn;
       state2.points = state.points;
         
+      state2.alpha = state.alpha;
+      state2.beta = state.beta;  
       return state2;
    }
   
@@ -250,7 +258,7 @@ public class AIPlayer {//add case for lion at end
       }
       for(int i = 0; i < 6; i++) {
          state.aIBench2[i] = bench2[i].getName();
-         if(!board[i].getName().contains("Lion") ) {// dont start out with the negative points
+         if(!state.aIBench2[i].contains("Lion") ) {// dont start out with the negative points
             state.points -= determinePoints(bench2[i].getName());
          }
       }
@@ -266,6 +274,7 @@ public class AIPlayer {//add case for lion at end
     */ 
    public Piece[] makeMove(Piece[] board, Piece[] bench1, Piece[] bench2) {
       //System.out.println("--------------------------");
+      firstStates = new LinkedList<State>();
       findLegalMoves(generateState(board,bench1,bench2));
       int max = firstStates.peek().points;
       State bestState = firstStates.peek();
@@ -281,8 +290,9 @@ public class AIPlayer {//add case for lion at end
          move[1] = board[bestState.location2];
       }
       else {
-         move[1] = bench2[bestState.location1];
-         move[0] = board[bestState.location2];
+      System.out.println("Yes");
+         move[0] = bench2[bestState.location1];
+         move[1] = board[bestState.location2];
       }
       return move;
    }
@@ -309,7 +319,7 @@ public class AIPlayer {//add case for lion at end
                count++;
            } 
        }
-       
+       System.out.println("Max: " + max);
        //create bestMoves array and empty linkedlist
        State[] bestMoves = new State[count];
        int index = 0;
@@ -333,13 +343,14 @@ public class AIPlayer {//add case for lion at end
    private State createStateAfterMove(State state,int location1,int location2 ,boolean benchSwap) {
       State state2 = copyState(state);
       state2.points = state.points;
+       
       if(!benchSwap) {
          state2.points += determinePoints(state2.aIBoard[location2]);
          state2.onBoardSwap(location1,location2);
-         if(state2.aIBoard[location2] == "LionUp" && location2 < 3) {
+         if(state2.aIBoard[location2].equals("LionUp") && location2 < 3) {
              state2.points -= 99999;
          }
-         else if(state2.aIBoard[location2] == "LionDown" && location2 > 8) {
+         else if(state2.aIBoard[location2].equals("LionDown") && location2 > 8) {
              state2.points += 99999;
          }
          state2.benchMove = false;
@@ -353,6 +364,8 @@ public class AIPlayer {//add case for lion at end
       state2.location1 = location1;
       state2.location2 = location2;
       
+      state2.alpha = state.alpha;
+      state2.beta = state.beta;
       return state2;
    }
    
@@ -364,7 +377,10 @@ public class AIPlayer {//add case for lion at end
    private int findLegalMoves(State state) {
       //System.out.println("Height: "+state.height +" Move: " + state.location1 + " swap with " + state.location2 + " points: " + state.points + " BenchSwap " + state.benchMove + " PlayerTurn " + state.playerTurn);
       int total = -5000;
+      //System.out.println("Alpha: " + state.alpha + " Beta: " + state.beta);
+     
       boolean totalNotGivenStartingValue = true;
+
       if(depth == state.height) {
          return state.points;
       }
@@ -374,33 +390,42 @@ public class AIPlayer {//add case for lion at end
           }
           return state.points;
       } 
+      String pieceDirection = "Up";
+      if(!state.playerTurn) {
+          pieceDirection = "Down";
+      }
       for(int i = 0; i < 12; i++) {
-         if(state.playerTurn && state.aIBoard[i].contains("Up")) {
+         if(state.aIBoard[i].contains(pieceDirection)  ) {
+            
             int moves[] =(int[]) movesMap.get(state.aIBoard[i]);
             for(int j = 0; j < moves.length; j++) {
                if(checkLegalMove(state.aIBoard, i, moves[j]) ) {
                   State state2 = createStateAfterMove(state,i,moves[j]+i,false);
                   int points = findLegalMoves(state2);
-                  if(points < total || totalNotGivenStartingValue) {
+                  if(!state.playerTurn && state.alpha >= points) {
+                      state.alpha = points;
+                  }
+                  if(state.playerTurn && state.beta < points) {
+                      state.beta = points;
+                  }
+
+                  if(state.playerTurn && (points < total || totalNotGivenStartingValue)) {
                       totalNotGivenStartingValue = false;
                       total = points;
                   }
-               }
-            }
-         } 
-         else if (!state.playerTurn && state.aIBoard[i].contains("Down")) {
-            int moves[] = (int[]) movesMap.get(state.aIBoard[i]);
-            for(int j = 0; j < moves.length; j++) {
-               if(checkLegalMove(state.aIBoard, i, moves[j]) ) {
-                  State state2 = createStateAfterMove(state,i,moves[j]+i,false);
-                  int points = findLegalMoves(state2);
-                  if(points > total || totalNotGivenStartingValue) {
+                  else if(!state.playerTurn && (points >= total || totalNotGivenStartingValue)) {
                       totalNotGivenStartingValue = false;
                       total = points;
-                  }
+                 }
+               }
+               if(state.alpha >= state.beta) {
+                   //System.out.println("test");
+
+                   //return total;
+                   break;
                }
             }
-         }  
+         }   
       }
       String[] bench = {""};
       if(state.playerTurn) {
@@ -412,21 +437,32 @@ public class AIPlayer {//add case for lion at end
       for(int i = 0; i < 6; i++) {
          if(!bench[i].contains("Empty")) {
             for(int j = 0; j < 12; j++) {
-            
+
                if(state.aIBoard[j].contains("Empty") ) {
                   State state2 = createStateAfterMove(state,i,j,true);
                 
                   int points = state2.points;
                   points = findLegalMoves(state2);
-                  if(state.playerTurn && points < total || totalNotGivenStartingValue) {
-                      total = points;
-                      totalNotGivenStartingValue = false;
+                  if(!state.playerTurn && state.alpha <= points) {
+                      state.alpha = points;
                   }
-                  else if(!state.playerTurn && points > total || totalNotGivenStartingValue) {
-                      total = points;
-                      totalNotGivenStartingValue = false;
-
+                  if(state.playerTurn && state.beta > points) {
+                      state.beta = points;
                   }
+                  if(state.playerTurn && (points < total || totalNotGivenStartingValue)) {
+                      totalNotGivenStartingValue = false;
+                      total = points;
+                  }
+                  else if(!state.playerTurn && (points >= total || totalNotGivenStartingValue)) {
+                      totalNotGivenStartingValue = false;
+                      total = points;
+                 }
+               }
+                if(state.alpha >= state.beta) {
+                //System.out.println("test");
+               
+                   //return total;
+                   break;
                }
             }
          }
@@ -436,9 +472,7 @@ public class AIPlayer {//add case for lion at end
       }
       state.points = total;
       //System.out.println("||End|| Height: "+state.height +" Move: " + state.location1 + " swap with " + state.location2 + " points: " + state.points + " BenchSwap " + state.benchMove + " PlayerTurn " + state.playerTurn);
-      if(state.points > 9000) {
-          //System.out.println("height: " + state.height);
-      }
+
       
       return total;
    }
