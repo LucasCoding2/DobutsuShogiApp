@@ -402,10 +402,10 @@ public class AIPlayer {//add case for lion at end
                if(checkLegalMove(state.aIBoard, i, moves[j]) ) {
                   State state2 = createStateAfterMove(state,i,moves[j]+i,false);
                   int points = findLegalMoves(state2);
-                  if(!state.playerTurn && state.alpha >= points) {
+                  if(!state.playerTurn && state.alpha <= points) {
                       state.alpha = points;
                   }
-                  if(state.playerTurn && state.beta < points) {
+                  if(state.playerTurn && state.beta > points) {
                       state.beta = points;
                   }
 
