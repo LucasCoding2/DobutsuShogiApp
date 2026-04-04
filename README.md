@@ -1,5 +1,5 @@
 # Note
-This is a work in progress, still needs to be debugged
+Updates from dcalabrese are actually from me.
 
 # Dependencies, Building, and Running
 ## Dependency Instructions
